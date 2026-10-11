@@ -1,0 +1,16 @@
+{
+    "sites": {
+        "6159": {
+            "name": "Kista Centrum",
+            "abbr": "KIS"
+        },
+        "2290": {
+            "name": "Kistagången",
+            "abbr": "KISG"
+        },
+        "3736": {
+            "name": "Jan stenbecks torg",
+            "abbr": "JST"
+        }
+    }
+}
