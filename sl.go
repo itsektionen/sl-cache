@@ -106,6 +106,7 @@ func LoadBlankInfos() {
 			}
 		}
 	}
+	updateSitesCache()
 }
 
 func fetchAllTargets() {
