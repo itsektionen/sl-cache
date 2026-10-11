@@ -17,7 +17,7 @@ type Config struct {
 var config Config
 
 func LoadConfig() {
-	res, err := os.ReadFile("./config.json")
+	res, err := os.ReadFile("/etc/sl-config.json")
 	if err != nil {
 		println("UNABLE TO READ CONTENTS OF CONFIG FILE: " + err.Error())
 		os.Exit(-1)
