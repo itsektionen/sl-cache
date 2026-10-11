@@ -97,6 +97,7 @@ func LoadBlankInfos() {
 		} else {
 			emptyData := make(map[string]any)
 			emptyData["departures"] = []string{}
+			emptyData["stop_deviations"] = []string{}
 			dataCache[siteId] = SiteInfo{
 				Name:         v.Name,
 				Abbreviation: v.Abbreviation,
