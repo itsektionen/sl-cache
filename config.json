@@ -1,16 +1,49 @@
 {
-    "sites": {
-        "6159": {
+    "sites": [
+        {
+            "id": 3736,
+            "name": "Jan Stenbecks torg",
+            "abbr": "JST",
+            "lines": [
+                {
+                    "name": "178",
+                    "type": "BUS",
+                    "group": "Bluebus"
+                },
+                {
+                    "name": "514",
+                    "type": "BUS"
+                },
+                {
+                    "name": "518",
+                    "type": "BUS"
+                },
+                {"name": "523", "type": "BUS"},
+                {"name": "155", "type": "BUS"}
+            ]
+        },
+        {
+            "id": 9302,
             "name": "Kista Centrum",
-            "abbr": "KIS"
+            "abbr": "KIS",
+            "lines": [
+                {"name": "11", "type": "TRAIN", "group": "Blueline"},
+                {"name": "179", "type": "BUS"},
+                {"name": "514X", "type": "BUS"},
+                {"name": "517", "type": "BUS"},
+                {"name": "612", "type": "BUS"},
+                {"name": "685", "type": "BUS"}
+            ]
         },
-        "2290": {
-            "name": "Kistagången",
-            "abbr": "KISG"
-        },
-        "3736": {
-            "name": "Janstenbeckstorg",
-            "abbr": "JST"
+        {
+            "id": 9507,
+            "name": "Helenelund",
+            "abbr": "HEL",
+            "lines": [
+                {"name": "40", "type": "COMMUTER_RAIL"},
+                {"name": "41", "type": "COMMUTER_RAIL"},
+                {"name": "528", "type":"BUS"}
+            ]
         }
-    }
+    ]
 }

@@ -10,33 +10,71 @@ import (
 	"time"
 )
 
-type SiteInfo struct {
-	Name         string         `json:"name"`
-	Abbreviation string         `json:"abbreviation"`
-	Departures   map[string]any `json:"departures"`
-	FetchTime    int64          `json:"fetchtime"`
-}
-
 var fetchingMutex sync.Mutex
-var dataCacheMutex sync.RWMutex
 var lastRequestTimes map[int]time.Time = make(map[int]time.Time)
 var lastRequestTime time.Time
-var dataCache map[int]SiteInfo = make(map[int]SiteInfo)
-var sitesCache string = "{}"
 
-func updateSitesCache() {
-	s, err := json.Marshal(dataCache)
-	if err != nil {
-		println("Error creating sites cache: " + err.Error())
-		return
-	}
-	sitesCache = string(s)
+type SLJourney struct {
+	Id              int     `json:"id"`
+	State           string  `json:"state"`
+	PredictionState *string `json:"prediction_state"`
+	PassengerLevel  *string `json:"passenger_level"`
+}
+type SLStopArea struct {
+	Id        int     `json:"id"`
+	Name      string  `json:"name"`
+	ShortName *string `json:"sname"`
+	Type      *string `json:"type"`
+}
+type SLStopPoint struct {
+	Id          int     `json:"id"`
+	Name        *string `json:"name"`
+	Designation *string `json:"designation"`
+}
+type SLLine struct {
+	Id            int     `json:"id"`
+	Designation   *string `json:"designation"`
+	TransportMode *string `json:"transport_mode"`
+	GroupOfLines  *string `json:"group_of_lines"`
+}
+type SLDepartureDeviation struct {
+	ImportanceLevel int    `json:"importance_level"`
+	Consequence     string `json:"consequence"`
+	Message         string `json:"message"`
+}
+
+type SLDeparture struct {
+	Direction     string                 `json:"direction"`
+	DirectionCode int                    `json:"direction_code"`
+	Via           *string                `json:"via"`
+	Destination   *string                `json:"destination"`
+	State         string                 `json:"state"`
+	Scheduled     string                 `json:"scheduled"`
+	Expected      *string                `json:"expected"`
+	Display       string                 `json:"display"`
+	Journey       SLJourney              `json:"journey"`
+	StopArea      SLStopArea             `json:"stop_area"`
+	StopPoint     SLStopPoint            `json:"stop_point"`
+	Line          SLLine                 `json:"line"`
+	Deviations    []SLDepartureDeviation `json:"deviations"`
+}
+
+type SLStopDeviation struct {
+	ImportanceLevel int   `json:"importance_level"`
+	Consequence     int   `json:"consequence"`
+	Message         int   `json:"message"`
+	Scope           []any `json:"scope"`
+}
+
+type SLSiteDepartures struct {
+	Departures     []SLDeparture     `json:"departures"`
+	StopDeviations []SLStopDeviation `json:"stop_deviations"`
 }
 
 func throttleRequest(s int) {
 	currentTime := time.Now()
 	lrt, hasBeenRequested := lastRequestTimes[s]
-	deltaTime := lastRequestTime.Nanosecond() + 10_000_000_000 - currentTime.Nanosecond()
+	deltaTime := lastRequestTime.Nanosecond() + 5_000_000_000 - currentTime.Nanosecond()
 	time.Sleep(time.Duration(deltaTime))
 	if hasBeenRequested {
 		deltaTime = lrt.Nanosecond() + 120_000_000_000 - currentTime.Nanosecond()
@@ -46,7 +84,12 @@ func throttleRequest(s int) {
 	lastRequestTimes[s] = currentTime
 }
 
-func fetchSite(s int) {
+var emptySiteInfo = SLSiteDepartures{
+	Departures:     make([]SLDeparture, 0),
+	StopDeviations: make([]SLStopDeviation, 0),
+}
+
+func SLFetchSite(s int) (SLSiteDepartures, error) {
 	u := "https://transport.integration.sl.se/v1/sites/" + strconv.Itoa(s) + "/departures"
 
 	fetchingMutex.Lock()
@@ -54,86 +97,27 @@ func fetchSite(s int) {
 
 	throttleRequest(s)
 
+	fmt.Println("Fetching " + u)
+
 	resp, err := http.Get(u)
 	if err != nil {
-		fmt.Println("Failed to get: " + u + ", error: " + err.Error())
-		return
+		return emptySiteInfo, fmt.Errorf("Failed to get URL " + err.Error())
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Invalid response when fetching url: " + u + ", error: " + err.Error())
-		return
+		return emptySiteInfo, fmt.Errorf("Failed to read the API response " + err.Error())
 	}
 
 	if resp.StatusCode != 200 {
-		fmt.Println("Unknown Response: " + resp.Status + " - " + string(body))
-		return
+		return emptySiteInfo, fmt.Errorf("Unknown Response: " + resp.Status + " - " + string(body))
 	}
 
-	m := make(map[string]any)
+	m := SLSiteDepartures{}
 
 	err = json.Unmarshal(body, &m)
 	if err != nil {
-		fmt.Println("Received invalid json: " + string(body) + " | Error: " + err.Error())
-		return
+		return emptySiteInfo, fmt.Errorf("Received invalid json: " + string(body) + " | Error: " + err.Error())
 	}
 
-	dataCacheMutex.Lock()
-	defer dataCacheMutex.Unlock()
-
-	siteInfo := dataCache[s]
-	siteInfo.Departures = m
-	siteInfo.FetchTime = time.Now().Unix()
-	dataCache[s] = siteInfo
-
-	updateSitesCache()
-}
-
-func LoadBlankInfos() {
-	for k, v := range GetConfig().Sites {
-		siteId, err := strconv.Atoi(k)
-		if err != nil {
-			println("Failed to parse int for site id: ", k)
-		} else {
-			emptyData := make(map[string]any)
-			emptyData["departures"] = []string{}
-			emptyData["stop_deviations"] = []string{}
-			dataCache[siteId] = SiteInfo{
-				Name:         v.Name,
-				Abbreviation: v.Abbreviation,
-				Departures:   emptyData,
-				FetchTime:    time.Now().Unix(),
-			}
-		}
-	}
-	updateSitesCache()
-}
-
-func fetchAllTargets() {
-	for k, _ := range GetConfig().Sites {
-		siteId, err := strconv.Atoi(k)
-		if err != nil {
-			println("Failed to parse int for site id: ", k)
-		} else {
-			fetchSite(siteId)
-		}
-	}
-}
-
-func GetSite(s int) (SiteInfo, bool) {
-	dataCacheMutex.RLock()
-	defer dataCacheMutex.RUnlock()
-	c, e := dataCache[s]
-	return c, e
-}
-func GetSites() string {
-	dataCacheMutex.RLock()
-	defer dataCacheMutex.RUnlock()
-	return sitesCache
-}
-
-func RequestLoop() {
-	for {
-		fetchAllTargets()
-	}
+	return m, err
 }

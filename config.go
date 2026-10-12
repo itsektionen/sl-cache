@@ -5,13 +5,21 @@ import (
 	"os"
 )
 
+type LineConfig struct {
+	Name  string  `json:"name"`
+	Type  string  `json:"type"`
+	Group *string `json:"group"`
+}
+
 type SiteConfig struct {
-	Name         string `json:"name"`
-	Abbreviation string `json:"abbr"`
+	Id           int          `json:"id"`
+	Name         string       `json:"name"`
+	Abbreviation string       `json:"abbr"`
+	Lines        []LineConfig `json:"lines"`
 }
 
 type Config struct {
-	Sites map[string]SiteConfig `json:"sites"`
+	Sites []SiteConfig `json:"sites"`
 }
 
 var config Config
