@@ -5,10 +5,16 @@ import (
 	"os"
 )
 
+type DirectionConfig struct {
+	SLDirId      int    `json:"dir"`
+	FallbackName string `json:"fallback"`
+}
+
 type LineConfig struct {
-	Name  string  `json:"name"`
-	Type  string  `json:"type"`
-	Group *string `json:"group"`
+	Name       string            `json:"name"`
+	Type       string            `json:"type"`
+	Group      *string           `json:"group"`
+	Directions []DirectionConfig `json:"dirs"`
 }
 
 type SiteConfig struct {
@@ -25,7 +31,7 @@ type Config struct {
 var config Config
 
 func LoadConfig() {
-	res, err := os.ReadFile("/etc/sl-config.json")
+	res, err := os.ReadFile("config.json")
 	if err != nil {
 		println("UNABLE TO READ CONTENTS OF CONFIG FILE: " + err.Error())
 		os.Exit(-1)

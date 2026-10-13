@@ -8,18 +8,74 @@
                 {
                     "name": "178",
                     "type": "BUS",
-                    "group": "Bluebus"
+                    "group": "Bluebus",
+                    "dirs": [
+                        {
+                            "dir": 1,
+                            "fallback": "Jakobsbergs station"
+                        },
+                        {
+                            "dir": 2,
+                            "fallback": "Mörby station"
+                        }
+                    ]
                 },
                 {
                     "name": "514",
-                    "type": "BUS"
+                    "type": "BUS",
+                    "dirs": [
+                        {
+                            "dir": 1,
+                            "fallback": "Unknown"
+                        },
+                        {
+                            "dir": 2,
+                            "fallback": "Unknown"
+                        }
+                    ]
                 },
                 {
                     "name": "518",
-                    "type": "BUS"
+                    "type": "BUS",
+                    "dirs": [
+                        {
+                            "dir": 1,
+                            "fallback": "Unknown"
+                        },
+                        {
+                            "dir": 2,
+                            "fallback": "Unknown"
+                        }
+                    ]
                 },
-                {"name": "523", "type": "BUS"},
-                {"name": "155", "type": "BUS"}
+                {
+                    "name": "523",
+                    "type": "BUS",
+                    "dirs": [
+                        {
+                            "dir": 1,
+                            "fallback": "Kista centrum"
+                        },
+                        {
+                            "dir": 2,
+                            "fallback": "Sollentuna station"
+                        }
+                    ]
+                },
+                {
+                    "name": "155",
+                    "type": "BUS",
+                    "dirs": [
+                        {
+                            "dir": 1,
+                            "fallback": "Unknown"
+                        },
+                        {
+                            "dir": 2,
+                            "fallback": "Unknown"
+                        }
+                    ]
+                }
             ]
         },
         {
@@ -27,12 +83,91 @@
             "name": "Kista Centrum",
             "abbr": "KIS",
             "lines": [
-                {"name": "11", "type": "TRAIN", "group": "Blueline"},
-                {"name": "179", "type": "BUS"},
-                {"name": "514X", "type": "BUS"},
-                {"name": "517", "type": "BUS"},
-                {"name": "612", "type": "BUS"},
-                {"name": "685", "type": "BUS"}
+                {
+                    "name": "11",
+                    "type": "TRAIN",
+                    "group": "Blueline",
+                    "dirs": [
+                        {
+                            "dir": 1,
+                            "fallback": "Akalla"
+                        },
+                        {
+                            "dir": 2,
+                            "fallback": "Kungsträdgården"
+                        }
+                    ]
+                },
+                {
+                    "name": "179",
+                    "type": "BUS",
+                    "dirs": [
+                        {
+                            "dir": 1,
+                            "fallback": "Sollentuna station"
+                        },
+                        {
+                            "dir": 2,
+                            "fallback": "Vällingby"
+                        }
+                    ]
+                },
+                {
+                    "name": "514X",
+                    "type": "BUS",
+                    "dirs": [
+                        {
+                            "dir": 1,
+                            "fallback": "Sollentuna station"
+                        },
+                        {
+                            "dir": 2,
+                            "fallback": "Spånga station"
+                        }
+                    ]
+                },
+                {
+                    "name": "517",
+                    "type": "BUS",
+                    "dirs": [
+                        {
+                            "dir": 1,
+                            "fallback": "Unknown"
+                        },
+                        {
+                            "dir": 2,
+                            "fallback": "Spånga station"
+                        }
+                    ]
+                },
+                {
+                    "name": "612",
+                    "type": "BUS",
+                    "dirs": [
+                        {
+                            "dir": 1,
+                            "fallback": "Unknown"
+                        },
+                        {
+                            "dir": 2,
+                            "fallback": "Unknown"
+                        }
+                    ]
+                },
+                {
+                    "name": "685",
+                    "type": "BUS",
+                    "dirs": [
+                        {
+                            "dir": 1,
+                            "fallback": "Åkersberga station"
+                        },
+                        {
+                            "dir": 2,
+                            "fallback": "Unknown"
+                        }
+                    ]
+                }
             ]
         },
         {
@@ -40,9 +175,48 @@
             "name": "Helenelund",
             "abbr": "HEL",
             "lines": [
-                {"name": "40", "type": "COMMUTER_RAIL"},
-                {"name": "41", "type": "COMMUTER_RAIL"},
-                {"name": "528", "type":"BUS"}
+                {
+                    "name": "40",
+                    "type": "COMMUTER_RAIL",
+                    "dirs": [
+                        {
+                            "dir": 1,
+                            "fallback": "Södertälje centrum"
+                        },
+                        {
+                            "dir": 2,
+                            "fallback": "Uppsala C"
+                        }
+                    ]
+                },
+                {
+                    "name": "41",
+                    "type": "COMMUTER_RAIL",
+                    "dirs": [
+                        {
+                            "dir": 1,
+                            "fallback": "Södertälje centrum"
+                        },
+                        {
+                            "dir": 2,
+                            "fallback": "Märsta"
+                        }
+                    ]
+                },
+                {
+                    "name": "528",
+                    "type": "BUS",
+                    "dirs": [
+                        {
+                            "dir": 1,
+                            "fallback": "Unknown"
+                        },
+                        {
+                            "dir": 2,
+                            "fallback": "Sollentuna station"
+                        }
+                    ]
+                }
             ]
         }
     ]

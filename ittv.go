@@ -11,22 +11,22 @@ type ITTVDeparture struct {
 	State     string `json:"state"`
 }
 
-type ITTVLine struct {
-	Name       string          `json:"name"`
-	Type       string          `json:"type"`
-	Group      string          `json:"group"`
-	Departures []ITTVDeparture `json:"departures"`
+type ITTVLineDirection struct {
+	FallbackDirection string          `json:"fallback_dir"`
+	Departures        []ITTVDeparture `json:"departures"`
 }
 
-type ITTVLinePair struct {
-	DirA ITTVLine `json:"dir_a"`
-	DirB ITTVLine `json:"dir_b"`
+type ITTVLine struct {
+	Name       string              `json:"name"`
+	Type       string              `json:"type"`
+	Group      string              `json:"group"`
+	Directions []ITTVLineDirection `json:"dirs"`
 }
 
 type ITTVSite struct {
-	Name         string         `json:"name"`
-	Abbreviation string         `json:"abbreviation"`
-	Lines        []ITTVLinePair `json:"lines"`
+	Name         string     `json:"name"`
+	Abbreviation string     `json:"abbreviation"`
+	Lines        []ITTVLine `json:"lines"`
 }
 
 type ITTVInfo struct {
@@ -55,30 +55,21 @@ func generateITTVSite(sl SiteInfo, conf SiteConfig) (ITTVSite, error) {
 	site := ITTVSite{
 		Name:         conf.Name,
 		Abbreviation: conf.Abbreviation,
-		Lines:        make([]ITTVLinePair, 0),
+		Lines:        make([]ITTVLine, 0),
 	}
 
-	lines := make(map[string]ITTVLinePair)
+	lines := make(map[string]map[int]ITTVLineDirection)
 
 	for _, v := range conf.Lines {
-		groupName := "Normal"
-		if v.Group != nil {
-			groupName = *v.Group
+		line := make(map[int]ITTVLineDirection, 0)
+
+		for _, d := range v.Directions {
+			line[d.SLDirId] = ITTVLineDirection{
+				FallbackDirection: d.FallbackName,
+				Departures:        make([]ITTVDeparture, 0),
+			}
 		}
-		lines[v.Name] = ITTVLinePair{
-			DirA: ITTVLine{
-				Name:       v.Name,
-				Type:       v.Type,
-				Group:      groupName,
-				Departures: make([]ITTVDeparture, 0),
-			},
-			DirB: ITTVLine{
-				Name:       v.Name,
-				Type:       v.Type,
-				Group:      groupName,
-				Departures: make([]ITTVDeparture, 0),
-			},
-		}
+		lines[v.Name] = line
 	}
 
 	for _, v := range sl.Departures {
@@ -93,18 +84,31 @@ func generateITTVSite(sl SiteInfo, conf SiteConfig) (ITTVSite, error) {
 
 		departure := generateITTVDeparture(v)
 
-		if v.DirectionCode == 1 {
-			line.DirA.Departures = append(line.DirA.Departures, departure)
-		} else if v.DirectionCode == 2 {
-			line.DirB.Departures = append(line.DirB.Departures, departure)
-		} else {
-			println("SL gave an invalid direction code")
+		direction, exists := line[v.DirectionCode]
+		if !exists {
+			continue
 		}
+
+		direction.Departures = append(direction.Departures, departure)
+		line[v.DirectionCode] = direction
 		lines[id] = line
 	}
 
 	for _, v := range conf.Lines {
-		site.Lines = append(site.Lines, lines[v.Name])
+		groupName := "Normal"
+		if v.Group != nil {
+			groupName = *v.Group
+		}
+		directions := make([]ITTVLineDirection, 0)
+		for _, d := range v.Directions {
+			directions = append(directions, lines[v.Name][d.SLDirId])
+		}
+		site.Lines = append(site.Lines, ITTVLine{
+			Group:      groupName,
+			Type:       v.Type,
+			Name:       v.Name,
+			Directions: directions,
+		})
 	}
 
 	return site, nil

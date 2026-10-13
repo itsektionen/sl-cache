@@ -5,4 +5,5 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY *.go ./
 RUN CGO_ENABLED=0 GOOS=linux go build -o /docker-sl-cache
+COPY config.json config.json
 CMD ["/docker-sl-cache"]
