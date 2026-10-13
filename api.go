@@ -30,10 +30,12 @@ func API() {
 func getSites(w http.ResponseWriter, r *http.Request) {
 	ApiCache.Mutex.RLock()
 	defer ApiCache.Mutex.RUnlock()
+	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(ApiCache.Sites))
 }
 func getITTV(w http.ResponseWriter, r *http.Request) {
 	ApiCache.Mutex.RLock()
 	defer ApiCache.Mutex.RUnlock()
+	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(ApiCache.ITTV))
 }
