@@ -1,19 +1,22 @@
 package main
 
 import (
+	"slices"
 	"strconv"
+	"time"
 )
 
-type ITTVDeparture struct {
-	Direction string `json:"direction"`
-	Scheduled string `json:"scheduled"`
-	Expected  string `json:"expected"`
-	State     string `json:"state"`
+type ITTVTimeDelayable struct {
+	Direction    string `json:"direction"`
+	ScheduleDisp *int   `json:"scheduled"`
+	ExpectedDisp *int   `json:"expected"`
+	State        string `json:"state"` // Same as SL, but can also be "" if it doesnt exist
 }
 
 type ITTVLineDirection struct {
-	FallbackDirection string          `json:"fallback_dir"`
-	Departures        []ITTVDeparture `json:"departures"`
+	Direction string            `json:"direction"`
+	Next      ITTVTimeDelayable `json:"next"`
+	NextNext  ITTVTimeDelayable `json:"nextnext"`
 }
 
 type ITTVLine struct {
@@ -37,17 +40,147 @@ var emptyInfo = ITTVInfo{
 	Sites: make([]ITTVSite, 0),
 }
 
-func generateITTVDeparture(departure SLDeparture) ITTVDeparture {
-	expected := departure.Scheduled
-	if departure.Expected != nil {
-		expected = *departure.Expected
+type slLineDepartures map[int][]SLDeparture
+type slLineMap map[string]slLineDepartures
+
+func formatDeltaTime(currentTime time.Time, targetTime *time.Time) *int {
+	if targetTime == nil {
+		return nil
+	}
+	delta := (*targetTime).Sub(currentTime)
+	minutes := int(delta.Minutes())
+
+	return &minutes
+}
+
+func emptyITTVTimeDelayable() ITTVTimeDelayable {
+	return ITTVTimeDelayable{
+		Direction:    "",
+		ScheduleDisp: nil,
+		ExpectedDisp: nil,
+		State:        "",
+	}
+}
+
+func generateITTVTimeDelayable(conf LineConfig, departure *SLDeparture, currentTime time.Time) ITTVTimeDelayable {
+	if departure == nil {
+		return emptyITTVTimeDelayable()
+	}
+	scheduled := formatDeltaTime(currentTime, &departure.ScheduledTime)
+	expected := formatDeltaTime(currentTime, departure.ExpectedTime)
+	if expected != nil && scheduled != nil {
+		if *expected == *scheduled {
+			expected = nil
+		}
+	}
+	return ITTVTimeDelayable{
+		Direction:    departure.Direction,
+		ScheduleDisp: scheduled,
+		ExpectedDisp: expected,
+		State:        departure.State,
+	}
+}
+
+func filterPast(departures []SLDeparture, cutoffTime time.Time) []SLDeparture {
+	filtered := make([]SLDeparture, 0)
+	for _, v := range departures {
+		if v.ScheduledTime.Before(cutoffTime) {
+			if v.ExpectedTime != nil {
+				if v.ExpectedTime.Before(cutoffTime) {
+					continue
+				}
+			} else {
+				continue
+			}
+		}
+
+		filtered = append(filtered, v)
+	}
+	return filtered
+}
+
+func generateITTVLineDirection(conf LineConfig, departures []SLDeparture, directionConfig DirectionConfig, currentTime time.Time) ITTVLineDirection {
+	filtered := filterPast(departures, currentTime.Add(time.Minute))
+	slices.SortFunc(filtered, func(i, j SLDeparture) int {
+		ti := i.ScheduledTime
+		tj := j.ScheduledTime
+		if i.ExpectedTime != nil {
+			ti = *i.ExpectedTime
+		}
+		if j.ExpectedTime != nil {
+			tj = *j.ExpectedTime
+		}
+		return ti.UTC().Compare(tj)
+	})
+
+	if len(filtered) == 0 {
+		return ITTVLineDirection{
+			Direction: directionConfig.FallbackName,
+			Next:      emptyITTVTimeDelayable(),
+			NextNext:  emptyITTVTimeDelayable(),
+		}
 	}
 
-	return ITTVDeparture{
-		Direction: departure.Direction,
-		Scheduled: departure.Scheduled,
-		Expected:  expected,
-		State:     departure.State,
+	nextNext := emptyITTVTimeDelayable()
+	if len(filtered) >= 2 {
+		nextNext = generateITTVTimeDelayable(conf, &filtered[1], currentTime)
+	}
+
+	return ITTVLineDirection{
+		Direction: filtered[0].Direction,
+		Next:      generateITTVTimeDelayable(conf, &filtered[0], currentTime),
+		NextNext:  nextNext,
+	}
+}
+
+func generateITTVLinesCombined(conf SiteConfig, departures []SLDeparture) slLineMap {
+	lines := make(slLineMap)
+
+	for _, v := range conf.Lines {
+		lines[v.Name] = make(slLineDepartures, 0)
+		for _, d := range v.Directions {
+			lines[v.Name][d.SLDirId] = make([]SLDeparture, 0)
+		}
+	}
+
+	for _, v := range departures {
+		id := strconv.Itoa(v.Line.Id)
+		if v.Line.Designation != nil {
+			id = *v.Line.Designation
+		}
+		line, exists := lines[id]
+		if !exists {
+			continue
+		}
+
+		direction, exists := line[v.DirectionCode]
+		if !exists {
+			continue
+		}
+
+		direction = append(direction, v)
+		line[v.DirectionCode] = direction
+		lines[id] = line
+	}
+	return lines
+}
+
+func generateITTVLine(lineConf LineConfig, line slLineDepartures) ITTVLine {
+	directions := make([]ITTVLineDirection, 0)
+	for _, d := range lineConf.Directions {
+		directions = append(directions, generateITTVLineDirection(lineConf, line[d.SLDirId], d, time.Now()))
+	}
+
+	groupName := "Normal"
+	if lineConf.Group != nil {
+		groupName = *lineConf.Group
+	}
+
+	return ITTVLine{
+		Group:      groupName,
+		Type:       lineConf.Type,
+		Name:       lineConf.Name,
+		Directions: directions,
 	}
 }
 
@@ -58,57 +191,10 @@ func generateITTVSite(sl SiteInfo, conf SiteConfig) (ITTVSite, error) {
 		Lines:        make([]ITTVLine, 0),
 	}
 
-	lines := make(map[string]map[int]ITTVLineDirection)
+	lines := generateITTVLinesCombined(conf, sl.Departures)
 
 	for _, v := range conf.Lines {
-		line := make(map[int]ITTVLineDirection, 0)
-
-		for _, d := range v.Directions {
-			line[d.SLDirId] = ITTVLineDirection{
-				FallbackDirection: d.FallbackName,
-				Departures:        make([]ITTVDeparture, 0),
-			}
-		}
-		lines[v.Name] = line
-	}
-
-	for _, v := range sl.Departures {
-		id := strconv.Itoa(v.Line.Id)
-		if v.Line.Designation != nil {
-			id = *v.Line.Designation
-		}
-		line, exists := lines[id]
-		if !exists {
-			continue
-		}
-
-		departure := generateITTVDeparture(v)
-
-		direction, exists := line[v.DirectionCode]
-		if !exists {
-			continue
-		}
-
-		direction.Departures = append(direction.Departures, departure)
-		line[v.DirectionCode] = direction
-		lines[id] = line
-	}
-
-	for _, v := range conf.Lines {
-		groupName := "Normal"
-		if v.Group != nil {
-			groupName = *v.Group
-		}
-		directions := make([]ITTVLineDirection, 0)
-		for _, d := range v.Directions {
-			directions = append(directions, lines[v.Name][d.SLDirId])
-		}
-		site.Lines = append(site.Lines, ITTVLine{
-			Group:      groupName,
-			Type:       v.Type,
-			Name:       v.Name,
-			Directions: directions,
-		})
+		site.Lines = append(site.Lines, generateITTVLine(v, lines[v.Name]))
 	}
 
 	return site, nil

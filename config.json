@@ -8,7 +8,7 @@
                 {
                     "name": "178",
                     "type": "BUS",
-                    "group": "Bluebus",
+                    "group": "Blåbuss",
                     "dirs": [
                         {
                             "dir": 1,
@@ -26,11 +26,11 @@
                     "dirs": [
                         {
                             "dir": 1,
-                            "fallback": "Unknown"
+                            "fallback": "Sollentuna station"
                         },
                         {
                             "dir": 2,
-                            "fallback": "Unknown"
+                            "fallback": "Spånga station"
                         }
                     ]
                 },
@@ -39,12 +39,8 @@
                     "type": "BUS",
                     "dirs": [
                         {
-                            "dir": 1,
-                            "fallback": "Unknown"
-                        },
-                        {
                             "dir": 2,
-                            "fallback": "Unknown"
+                            "fallback": "Vällingby"
                         }
                     ]
                 },
@@ -68,11 +64,11 @@
                     "dirs": [
                         {
                             "dir": 1,
-                            "fallback": "Unknown"
+                            "fallback": "Akalla"
                         },
                         {
                             "dir": 2,
-                            "fallback": "Unknown"
+                            "fallback": "Brommaplan"
                         }
                     ]
                 }
@@ -85,8 +81,8 @@
             "lines": [
                 {
                     "name": "11",
-                    "type": "TRAIN",
-                    "group": "Blueline",
+                    "type": "METRO",
+                    "group": "Tunnelbanans blå linje",
                     "dirs": [
                         {
                             "dir": 1,
@@ -131,10 +127,6 @@
                     "type": "BUS",
                     "dirs": [
                         {
-                            "dir": 1,
-                            "fallback": "Unknown"
-                        },
-                        {
                             "dir": 2,
                             "fallback": "Spånga station"
                         }
@@ -145,12 +137,8 @@
                     "type": "BUS",
                     "dirs": [
                         {
-                            "dir": 1,
-                            "fallback": "Unknown"
-                        },
-                        {
                             "dir": 2,
-                            "fallback": "Unknown"
+                            "fallback": "Arninge station"
                         }
                     ]
                 },
@@ -161,10 +149,6 @@
                         {
                             "dir": 1,
                             "fallback": "Åkersberga station"
-                        },
-                        {
-                            "dir": 2,
-                            "fallback": "Unknown"
                         }
                     ]
                 }
@@ -177,7 +161,8 @@
             "lines": [
                 {
                     "name": "40",
-                    "type": "COMMUTER_RAIL",
+                    "type": "TRAIN",
+                    "group": "Pendeltåg",
                     "dirs": [
                         {
                             "dir": 1,
@@ -191,7 +176,8 @@
                 },
                 {
                     "name": "41",
-                    "type": "COMMUTER_RAIL",
+                    "type": "TRAIN",
+                    "group": "Pendeltåg",
                     "dirs": [
                         {
                             "dir": 1,
@@ -207,10 +193,6 @@
                     "name": "528",
                     "type": "BUS",
                     "dirs": [
-                        {
-                            "dir": 1,
-                            "fallback": "Unknown"
-                        },
                         {
                             "dir": 2,
                             "fallback": "Sollentuna station"

@@ -44,13 +44,15 @@ type SLDepartureDeviation struct {
 }
 
 type SLDeparture struct {
-	Direction     string                 `json:"direction"`
-	DirectionCode int                    `json:"direction_code"`
-	Via           *string                `json:"via"`
-	Destination   *string                `json:"destination"`
-	State         string                 `json:"state"`
-	Scheduled     string                 `json:"scheduled"`
-	Expected      *string                `json:"expected"`
+	Direction     string  `json:"direction"`
+	DirectionCode int     `json:"direction_code"`
+	Via           *string `json:"via"`
+	Destination   *string `json:"destination"`
+	State         string  `json:"state"`
+	Scheduled     string  `json:"scheduled"`
+	ScheduledTime time.Time
+	Expected      *string `json:"expected"`
+	ExpectedTime  *time.Time
 	Display       string                 `json:"display"`
 	Journey       SLJourney              `json:"journey"`
 	StopArea      SLStopArea             `json:"stop_area"`
@@ -97,26 +99,45 @@ func SLFetchSite(s int) (SLSiteDepartures, error) {
 
 	throttleRequest(s)
 
-	fmt.Println("Fetching " + u)
-
 	resp, err := http.Get(u)
 	if err != nil {
-		return emptySiteInfo, fmt.Errorf("Failed to get URL " + err.Error())
+		return emptySiteInfo, fmt.Errorf("Failed to get URL (%s), err: %s", u, err.Error())
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return emptySiteInfo, fmt.Errorf("Failed to read the API response " + err.Error())
+		return emptySiteInfo, fmt.Errorf("Failed to read the API response URL (%s), %s", u, err.Error())
 	}
 
 	if resp.StatusCode != 200 {
-		return emptySiteInfo, fmt.Errorf("Unknown Response: " + resp.Status + " - " + string(body))
+		return emptySiteInfo, fmt.Errorf("Unknown Response: %s, body: %s", resp.Status, string(body))
 	}
 
 	m := SLSiteDepartures{}
 
 	err = json.Unmarshal(body, &m)
 	if err != nil {
-		return emptySiteInfo, fmt.Errorf("Received invalid json: " + string(body) + " | Error: " + err.Error())
+		return emptySiteInfo, fmt.Errorf("Received invalid json: %s, error: %s", string(body), err.Error())
+	}
+
+	timeZone, err := time.LoadLocation("Europe/Stockholm")
+	if err != nil {
+		return emptySiteInfo, fmt.Errorf("Unable to read timezone Europe/Stockholm: %s", err.Error())
+	}
+
+	for k, v := range m.Departures {
+		v.ScheduledTime, err = time.ParseInLocation("2006-01-02T15:04:05", v.Scheduled, timeZone)
+		if err != nil {
+			return emptySiteInfo, fmt.Errorf("Unable to parse time: %s, err: %s", v.Scheduled, err.Error())
+		}
+		if v.Expected != nil {
+			expectedTime, err := time.ParseInLocation("2006-01-02T15:04:05", *v.Expected, timeZone)
+			if err != nil {
+				return emptySiteInfo, fmt.Errorf("Unable to parse time: %s, err: %s", *v.Expected, err.Error())
+			}
+			v.ExpectedTime = &expectedTime
+		}
+
+		m.Departures[k] = v
 	}
 
 	return m, err

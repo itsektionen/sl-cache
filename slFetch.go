@@ -63,7 +63,7 @@ func LoadBlankInfos() {
 func fetchSite(conf SiteConfig) {
 	slData, err := SLFetchSite(conf.Id)
 	if err != nil {
-		fmt.Printf("SL Fetching Error: " + err.Error())
+		fmt.Printf("SL Fetching Error: %s", err.Error())
 		return
 	}
 
