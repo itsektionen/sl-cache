@@ -16,24 +16,41 @@ type SiteInfo struct {
 }
 
 type SLCache struct {
-	Mutex sync.Mutex
-	sites map[int]SiteInfo
+	Mutex   sync.Mutex
+	sites   map[int]SiteInfo
+	IsValid bool
 }
 type APICache struct {
-	Mutex sync.RWMutex
-	Sites []byte
-	ITTV  []byte
+	Mutex   sync.RWMutex
+	Sites   []byte
+	ITTV    []byte
+	IsValid bool
 }
 
 var slCache = SLCache{}
 var ApiCache = APICache{}
 
 func clearSLCache() {
+	slCache.Mutex.Lock()
+	defer slCache.Mutex.Unlock()
+
 	slCache.sites = make(map[int]SiteInfo, 0)
+	slCache.IsValid = false
 }
 func updateAPICache() {
 	ApiCache.Mutex.Lock()
 	defer ApiCache.Mutex.Unlock()
+	slCache.Mutex.Lock()
+	defer slCache.Mutex.Unlock()
+
+	ApiCache.ITTV = make([]byte, 0)
+	ApiCache.Sites = make([]byte, 0)
+	ApiCache.IsValid = false
+
+	if !slCache.IsValid {
+		println("SL Cache is invalid")
+		return
+	}
 
 	s, err := json.Marshal(slCache.sites)
 	if err != nil {
@@ -53,6 +70,7 @@ func updateAPICache() {
 		return
 	}
 	ApiCache.ITTV = s
+	ApiCache.IsValid = true
 }
 
 func LoadBlankInfos() {
@@ -63,12 +81,10 @@ func LoadBlankInfos() {
 func fetchSite(conf SiteConfig) {
 	slData, err := SLFetchSite(conf.Id)
 	if err != nil {
-		fmt.Printf("SL Fetching Error: %s", err.Error())
+		fmt.Printf("SL Fetching Error: %s\n", err.Error())
+		slCache.IsValid = false
 		return
 	}
-
-	slCache.Mutex.Lock()
-	defer slCache.Mutex.Unlock()
 
 	siteInfo := slCache.sites[conf.Id]
 	siteInfo.Abbreviation = conf.Abbreviation
@@ -81,14 +97,26 @@ func fetchSite(conf SiteConfig) {
 
 func fetchAllTargets() {
 	clearSLCache()
+	slCache.Mutex.Lock()
+	slCache.IsValid = true
+
 	for _, v := range GetConfig().Sites {
-		fetchSite(v)
+		if slCache.IsValid {
+			fetchSite(v)
+		} else {
+			println("Invalid cache, skipping fetches")
+		}
 	}
+	slCache.Mutex.Unlock()
 	updateAPICache()
 }
 
 func RequestLoop() {
+	lastFetchTime := time.Now()
 	for {
 		fetchAllTargets()
+		currentTime := time.Now()
+		time.Sleep(lastFetchTime.Sub(currentTime) + 60_000_000_000)
+		lastFetchTime = time.Now()
 	}
 }

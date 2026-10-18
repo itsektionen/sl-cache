@@ -30,12 +30,23 @@ func API() {
 func getSites(w http.ResponseWriter, r *http.Request) {
 	ApiCache.Mutex.RLock()
 	defer ApiCache.Mutex.RUnlock()
+	if !ApiCache.IsValid {
+		w.WriteHeader(500)
+		w.Write([]byte("Cache is invalid :("))
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(ApiCache.Sites))
 }
 func getITTV(w http.ResponseWriter, r *http.Request) {
 	ApiCache.Mutex.RLock()
 	defer ApiCache.Mutex.RUnlock()
+	if !ApiCache.IsValid {
+		w.WriteHeader(500)
+		w.Write([]byte("Cache is invalid :("))
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(ApiCache.ITTV))
 }

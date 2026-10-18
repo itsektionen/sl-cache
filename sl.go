@@ -76,12 +76,17 @@ type SLSiteDepartures struct {
 func throttleRequest(s int) {
 	currentTime := time.Now()
 	lrt, hasBeenRequested := lastRequestTimes[s]
-	deltaTime := lastRequestTime.Nanosecond() + 5_000_000_000 - currentTime.Nanosecond()
-	time.Sleep(time.Duration(deltaTime))
+	deltaTime := lastRequestTime.Sub(currentTime) + 5_000_000_000
+	time.Sleep(deltaTime)
+	currentTime = time.Now()
+	lastRequestTime = currentTime
 	if hasBeenRequested {
-		deltaTime = lrt.Nanosecond() + 120_000_000_000 - currentTime.Nanosecond()
-		currentTime = time.Now()
-		time.Sleep(time.Duration(deltaTime))
+		deltaTime = lrt.Sub(currentTime) + 30_000_000_000
+		if deltaTime > 0 {
+			fmt.Printf("Excessive fetches to same URL, throttling for %d s\n", int(deltaTime.Seconds()))
+			time.Sleep(deltaTime)
+			currentTime = time.Now()
+		}
 	}
 	lastRequestTimes[s] = currentTime
 }
@@ -98,6 +103,8 @@ func SLFetchSite(s int) (SLSiteDepartures, error) {
 	defer fetchingMutex.Unlock()
 
 	throttleRequest(s)
+
+	// println("Fetching " + u)
 
 	resp, err := http.Get(u)
 	if err != nil {
