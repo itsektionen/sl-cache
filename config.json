@@ -21,6 +21,20 @@
                     ]
                 },
                 {
+                    "name": "155",
+                    "type": "BUS",
+                    "dirs": [
+                        {
+                            "dir": 1,
+                            "fallback": "Akalla"
+                        },
+                        {
+                            "dir": 2,
+                            "fallback": "Brommaplan"
+                        }
+                    ]
+                },
+                {
                     "name": "514",
                     "type": "BUS",
                     "dirs": [
@@ -55,20 +69,6 @@
                         {
                             "dir": 2,
                             "fallback": "Sollentuna station"
-                        }
-                    ]
-                },
-                {
-                    "name": "155",
-                    "type": "BUS",
-                    "dirs": [
-                        {
-                            "dir": 1,
-                            "fallback": "Akalla"
-                        },
-                        {
-                            "dir": 2,
-                            "fallback": "Brommaplan"
                         }
                     ]
                 }
